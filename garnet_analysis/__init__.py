@@ -11,12 +11,12 @@ __email__ = "your.email@example.com"
 # Import main classes and functions for easy access
 from .core.diffusivity import DiffusivityAnalyzer, DiffusivityResult
 from .core.arrhenius import ArrheniusAnalyzer, ArrheniusResult
-from .core.energy import EnergyAnalyzer, FormationEnergyCalculator
-from .core.structure import StructureHandler, CifProcessor
+# from .core.energy import EnergyAnalyzer, FormationEnergyCalculator
+# from .core.structure import StructureHandler, CifProcessor
 
 from .plotting.diffusivity_plots import plot_msd, plot_diffusivity_screening
 from .plotting.arrhenius_plots import plot_arrhenius, plot_temperature_dependence
-from .plotting.screening_plots import plot_formation_energy_vs_diffusivity
+# from .plotting.screening_plots import plot_formation_energy_vs_diffusivity
 
 from .utils.constants import (
     LLZO_REFERENCE_DIFFUSIVITY, 
