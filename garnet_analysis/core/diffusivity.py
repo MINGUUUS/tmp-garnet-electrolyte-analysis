@@ -160,11 +160,16 @@ class DiffusivityAnalyzer:
                     return el.symbol
             return "Unknown"
             
-        element_order = [get_element_by_mass(mass) for mass in masses.flatten()]
+        atomic_masses = np.array(masses).flatten().tolist()
+        element_order = [get_element_by_mass(mass) for mass in atomic_masses]
+        
+
+        
         
         # Create new structure with updated coordinates
         new_structure = template_structure.copy()
         new_structure.sort(key=lambda site: element_order.index(site.species_string))
+        
         
         # Sort dump data by atom type
         dump.data = dump.data.sort_values('type')
@@ -172,6 +177,7 @@ class DiffusivityAnalyzer:
         if len(new_structure) != len(dump.data):
             raise ValueError("Structure and dump have different number of atoms")
             
+        
         # Update coordinates
         new_coords = np.array(dump.data[['x', 'y', 'z']])
         for i, site in enumerate(new_structure):
@@ -231,7 +237,6 @@ class DiffusivityAnalyzer:
             specie = Specie.from_str('Li+')
         else:
             specie = Specie(species, 0)
-            
         # Create AIMD analyzer
         difs = AIMDAnalyzer.from_structures(
             structures=self.structures,
@@ -254,7 +259,6 @@ class DiffusivityAnalyzer:
             summary = ea.get_summary_dict(oxidized_specie='Li+')
         else:
             summary = ea.get_summary_dict(oxidized_specie=species)
-            
         # Calculate time range
         time_ps = np.array(difs.dt) / 1000
         time_range = (
@@ -292,7 +296,7 @@ class DiffusivityAnalyzer:
         # Simple MSD calculation
         if species != 'Li':
             raise NotImplementedError("Fallback method only supports Li analysis")
-            
+        
         # Extract Li positions over time
         li_trajectories = []
         for structure in self.structures:
@@ -301,7 +305,7 @@ class DiffusivityAnalyzer:
                 if site.species_string == 'Li':
                     li_positions.append(site.coords)
             li_trajectories.append(np.array(li_positions))
-            
+        
         # Calculate MSD
         n_li = len(li_trajectories[0])
         n_times = len(li_trajectories)
@@ -317,7 +321,7 @@ class DiffusivityAnalyzer:
             
             msd = np.mean(np.sum(displacements**2, axis=1))
             msd_values.append(msd)
-            
+        
         # Fit linear region (simplified)
         time_ps = np.array(self.time_points)
         msd_array = np.array(msd_values)
@@ -374,6 +378,7 @@ class DiffusivityAnalyzer:
         
         for element in elements:
             if HAS_AIMD:
+                
                 # Use AIMD for non-Li elements
                 specie = Specie(element, 0)
                 difs = AIMDAnalyzer.from_structures(
@@ -391,6 +396,7 @@ class DiffusivityAnalyzer:
                     }
                 )
                 
+                
                 time_ps = np.array(difs.dt) / 1000
                 n_points = len(time_ps)
                 
@@ -402,6 +408,7 @@ class DiffusivityAnalyzer:
                     msd_final=difs.msd[-1]
                 )
             else:
+                
                 # Fallback method for other elements
                 results[element] = ElementMSDData(
                     element=element,
