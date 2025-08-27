@@ -1,0 +1,68 @@
+#--------------------------- Simulation variables -----------------------------#
+
+variable          T equal 1000
+variable          output      equal 100
+variable          dumpstep    equal 500
+variable          runstep     equal 400000
+variable          eqstep      equal 1000
+variable          nrestart    equal 50000
+
+#---------------------------- Atomic setup ------------------------------------#
+units            metal
+atom_style       atomic
+boundary         p p p
+read_data        ./Ef_0000_HZnAsO_LiPPdO_486.data
+
+pair_style       e3gnn
+pair_coeff       * * ./deployed_serial.pt Li P Pd O
+
+timestep         0.001
+
+group            Li    type 1
+group            P    type 2
+group            Pd    type 3
+group            O     type 4
+
+#----------------------------- Run simulation ---------------------------------#
+thermo           ${output}
+thermo_style     custom step time tpcpu pe ke etotal vol press temp
+
+fix              f1 all nvt temp ${T} ${T} 0.1
+fix              comfix all momentum 1 linear 1 1 1
+velocity         all create ${T} 598173 dist gaussian mom yes
+
+# MSD computations
+compute          Li_msd1 Li msd
+fix              fmsd1   Li ave/time 500 1 500 c_Li_msd1[1] c_Li_msd1[2] c_Li_msd1[3] c_Li_msd1[4] file 01_msd_output.txt
+
+compute          Li_msd2 Li msd com yes
+fix              fmsd2 Li ave/time 500 1 500 c_Li_msd2[1] c_Li_msd2[2] c_Li_msd2[3] c_Li_msd2[4] file 02_msd_output.txt
+
+compute          Li_msd3 Li msd average yes
+fix              fmsd3 Li ave/time 500 1 500 c_Li_msd3[1] c_Li_msd3[2] c_Li_msd3[3] c_Li_msd3[4] file 03_msd_output.txt
+
+compute          Li_msd4 Li msd com yes average yes
+fix              fmsd4 Li ave/time 500 1 500 c_Li_msd4[1] c_Li_msd4[2] c_Li_msd4[3] c_Li_msd4[4] file 04_msd_output.txt
+
+compute          B_msd   P msd
+fix              fmsd5   P ave/time 500 1 500 c_B_msd[1] c_B_msd[2] c_B_msd[3] c_B_msd[4] file P_msd_output.txt
+
+compute          C_msd   Pd msd
+fix              fmsd6   Pd ave/time 500 1 500 c_C_msd[1] c_C_msd[2] c_C_msd[3] c_C_msd[4] file Pd_msd_output.txt
+
+compute          O_msd   O msd
+fix              fmsd7   O ave/time 500 1 500 c_O_msd[1] c_O_msd[2] c_O_msd[3] c_O_msd[4] file O_msd_output.txt
+
+shell           mkdir restart_bins
+restart         ${nrestart} ./restart_bins/restart.*.bin
+
+# Equilibration
+dump            mydump1 all custom ${dumpstep} eqdump.traj id type x y z fx fy fz
+dump_modify     mydump1 sort id
+run             ${eqstep}
+undump          mydump1
+
+# Main
+dump            mydump2 all custom ${dumpstep} dump.traj id type x y z fx fy fz
+dump_modify     mydump2 sort id
+run             ${runstep}
